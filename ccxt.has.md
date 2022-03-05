@@ -1,0 +1,31 @@
+console.log(exchange.has);
+
+{
+    publicAPI: true,
+    privateAPI: true,
+    spot: true,
+    future: false,
+    option: false,
+    cancelOrder: true,
+    createLimitOrder: true,
+    createMarketOrder: true,
+    createOrder: true,
+    editOrder: true,
+    fetchBalance: true,
+    fetchClosedOrders: true,
+    fetchCurrencies: true,
+    fetchL2OrderBook: true,
+    fetchMarkets: true,
+    fetchMyTrades: true,
+    fetchOHLCV: 'emulated',
+    fetchOpenOrders: true,
+    fetchOrder: true,
+    fetchOrderBook: true,
+    fetchOrders: true,
+    fetchTicker: true,
+    fetchTickers: true,
+    fetchTrades: true,
+    fetchWithdrawals: true,
+    loadMarkets: true,
+    withdraw: true
+}

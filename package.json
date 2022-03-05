@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "ccxt": "^1.75.1",
+    "config": "^3.3.7",
+    "node-fetch": "^3.2.1"
+  },
+  "name": "liquid",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "type": "module"
+}
