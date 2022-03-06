@@ -2,7 +2,6 @@
 
 import fs from 'fs';
 import config from 'config';
-import fetch from 'node-fetch';
 import ccxt from 'ccxt';
 
 const exchangeId = 'liquid',
@@ -14,12 +13,11 @@ const exchangeId = 'liquid',
         'enableRateLimit': true,
     });
 
-const GET_KLINE_URL = 'https://api.cryptowat.ch/markets/liquid/btcjpy/ohlc?periods=60';
-
 const SYMBOL = 'BTC/JPY';
-const interval = 3000;    // apiにリクエスト飛ばす感覚
-const LOT = 0.0001; // BTC min 0.0001
-let orderInfo = null; // 注文情報の格納
+const interval = 3000;
+const LOT = 0.0001; // BTC order amount (min 0.0001)
+const records = [];
+let orderInfo = null;
 
 // wait time setting
 let sleep = (ms) => new Promise (resolve => setTimeout (resolve, ms));
@@ -29,21 +27,15 @@ let sleep = (ms) => new Promise (resolve => setTimeout (resolve, ms));
 
     while (true) {
 
-        const res = await fetch(GET_KLINE_URL);
-        const data = await res.json();
-        const kline = data['result']['60'];
-
-        let sum = 0;
-        for(let i = 0; i <= 99; i++) {
-            sum += kline[i][4]; // close
-        }
-
-        const sma = sum / 100;
-        console.log('sma100', sma);
-
         // last ticker information
         const ticker = await exchange.fetchTicker(SYMBOL);
+        records.push(ticker.ask);
+        if (records.length > 3){
+            records.shift();
+        }
         const price = ticker.ask;
+        const condition = (records[0] < records[1] && records[1] < records[2]);
+        console.log(`price ${price} records [${records}] condition ${condition}`);
 
         // Sell
         if (orderInfo) {
@@ -52,7 +44,7 @@ let sleep = (ms) => new Promise (resolve => setTimeout (resolve, ms));
             if (price > target) {
                 const order = exchange.createMarketOrder(SYMBOL, 'sell', LOT);
                 orderInfo = null;
-                writeLog('sold: profit', price - orderInfo.price);
+                writeLog(`sold: profit ${price - orderInfo.price}`);
                 await sleep(interval);
                 continue;
             }
@@ -63,18 +55,18 @@ let sleep = (ms) => new Promise (resolve => setTimeout (resolve, ms));
         }
 
         // Buy
-        if (price > sma) {
-            console.log("buy: surge flag");
+        if (condition) {
             const order = exchange.createMarketOrder(SYMBOL, 'buy', LOT);
             orderInfo = {
                 order: order,
                 price: price,
             }
-            writeLog("bought", price);
+            writeLog(`bought ${price}`);
             await sleep(interval);
             continue;
         }
 
+    await sleep(interval);
     }
 
 })();
