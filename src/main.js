@@ -27,43 +27,48 @@ let sleep = (ms) => new Promise (resolve => setTimeout (resolve, ms));
 
     while (true) {
 
-        // last ticker information
-        const ticker = await exchange.fetchTicker(SYMBOL);
-        records.push(ticker.ask);
-        if (records.length > 3){
-            records.shift();
-        }
-        const price = ticker.ask;
-        const condition = (records[0] < records[1] && records[1] < records[2]);
-        console.log(`price ${price} records [${records}] condition ${condition}`);
+        try {
+            // last ticker information
+            const ticker = await exchange.fetchTicker(SYMBOL);
+            records.push(ticker.ask);
+            if (records.length > 3){
+                records.shift();
+            }
+            const price = ticker.ask;
+            const condition = (records[0] < records[1] && records[1] < records[2]);
+            console.log(`price ${price} records [${records}] condition ${condition}`);
 
-        // Sell
-        if (orderInfo) {
-            const target = orderInfo.price * 1.01;
+            // Sell
+            if (orderInfo) {
+                const target = orderInfo.price * 1.01;
 
-            if (price > target) {
-                const order = exchange.createMarketOrder(SYMBOL, 'sell', LOT);
-                orderInfo = null;
-                writeLog(`sold: profit ${price - orderInfo.price}`);
+                if (price > target) {
+                    const order = exchange.createMarketOrder(SYMBOL, 'sell', LOT);
+                    orderInfo = null;
+                    writeLog(`sold: profit ${price - orderInfo.price}`);
+                    await sleep(interval);
+                    continue;
+                }
+
+                console.log("hold");
                 await sleep(interval);
                 continue;
             }
 
-            console.log("hold");
-            await sleep(interval);
-            continue;
-        }
-
-        // Buy
-        if (condition) {
-            const order = exchange.createMarketOrder(SYMBOL, 'buy', LOT);
-            orderInfo = {
-                order: order,
-                price: price,
+            // Buy
+            if (condition) {
+                const order = exchange.createMarketOrder(SYMBOL, 'buy', LOT);
+                orderInfo = {
+                    order: order,
+                    price: price,
+                }
+                writeLog(`bought ${price}`);
+                await sleep(interval);
+                continue;
             }
-            writeLog(`bought ${price}`);
-            await sleep(interval);
-            continue;
+
+        } catch (error) {
+            console.error(error);
         }
 
     await sleep(interval);
