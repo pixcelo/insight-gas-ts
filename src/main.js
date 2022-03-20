@@ -15,7 +15,7 @@ const exchangeId = 'liquid',
 
 const SYMBOL = 'BTC/JPY';
 const interval = 3000;
-const LOT = 0.0001; // BTC order amount (min 0.0001)
+const LOT = 0.002; // BTC order amount (min 0.0001)
 const records = [];
 let orderInfo = null;
 
@@ -40,7 +40,7 @@ let sleep = (ms) => new Promise (resolve => setTimeout (resolve, ms));
 
             // Sell
             if (orderInfo) {
-                const target = orderInfo.price * 1.01;
+                const target = orderInfo.price * 1.02;
 
                 if (price > target) {
                     const order = exchange.createMarketOrder(SYMBOL, 'sell', LOT);
@@ -50,7 +50,7 @@ let sleep = (ms) => new Promise (resolve => setTimeout (resolve, ms));
                     continue;
                 }
 
-                console.log("hold");
+                console.log(`hold target:${target}`);
                 await sleep(interval);
                 continue;
             }
