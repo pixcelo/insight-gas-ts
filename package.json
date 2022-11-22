@@ -1,7 +1,9 @@
 {
   "dependencies": {
+    "axios": "^0.26.1",
     "ccxt": "^1.75.1",
-    "config": "^3.3.7"
+    "config": "^3.3.7",
+    "csv-writer": "^1.6.0"
   },
   "name": "liquid",
   "version": "1.0.0",

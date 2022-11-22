@@ -5,7 +5,7 @@ import config from 'config';
 import ccxt from 'ccxt';
 
 const exchangeId = 'liquid',
-      exchangeClass = ccxt[exchangeId],
+exchangeClass = ccxt[exchangeId],
       exchange = new exchangeClass({
         'apiKey': config.get('liquid.apiKey'),
         'secret': config.get('liquid.apiSecret'),
@@ -15,7 +15,7 @@ const exchangeId = 'liquid',
 
 const SYMBOL = 'BTC/JPY';
 const interval = 300000; // 5min
-const LOT = 0.005; // BTC order amount (min 0.0001)
+const LOT = 0.01; // BTC order amount (min 0.0001)
 const records = [];
 let orderInfo = null;
 
@@ -40,7 +40,7 @@ let sleep = (ms) => new Promise (resolve => setTimeout (resolve, ms));
 
             // Sell
             if (orderInfo) {
-                const target = orderInfo.price * 1.01;
+                const target = orderInfo.price * 1.03;
 
                 if (price > target) {
                     const order = exchange.createMarketOrder(SYMBOL, 'sell', LOT);
