@@ -27,8 +27,9 @@ async function getOHLCV(period) {
             const kline = [];
 
             for (const candle of candles) {
+                const date = timestampToTime(candle[0]);
                 const obj_candle = {
-                    'time': candle[0],
+                    'time': date,
                     'open': candle[1],
                     'high': candle[2],
                     'low': candle[3],
@@ -62,3 +63,19 @@ async function getOHLCV(period) {
                 });
         });
 }
+
+
+// 引数 timestamp の単位はミリ秒であるとする
+function timestampToTime(timestamp) {
+    const date = new Date(timestamp * 1000);
+    const yyyy = `${date.getFullYear()}`;
+    // .slice(-2)で文字列中の末尾の2文字を取得する
+    // `0${date.getHoge()}`.slice(-2) と書くことで０埋めをする
+    const MM = `0${date.getMonth() + 1}`.slice(-2); // getMonth()の返り値は0が基点
+    const dd = `0${date.getDate()}`.slice(-2);
+    const HH = `0${date.getHours()}`.slice(-2);
+    const mm = `0${date.getMinutes()}`.slice(-2);
+    const ss = `0${date.getSeconds()}`.slice(-2);
+
+    return `${yyyy}/${MM}/${dd} ${HH}:${mm}:${ss}`;
+  }

@@ -40,7 +40,7 @@ let sleep = (ms) => new Promise (resolve => setTimeout (resolve, ms));
 
             // Sell
             if (orderInfo) {
-                const target = orderInfo.price * 1.03;
+                const target = orderInfo.price * 1.05;
 
                 if (price > target) {
                     const order = exchange.createMarketOrder(SYMBOL, 'sell', LOT);
