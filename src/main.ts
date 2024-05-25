@@ -23,7 +23,14 @@ function getSheetData(sheetUrl: string, sheetName: string): Map<string, string> 
     return map;
 }
 
-class Config {
+interface IConfig {
+    getSettings(): Map<string, string>
+}
+
+/**
+ * 設定シート管理用クラス
+ */
+class Config implements IConfig {
     private settings: Map<string, string>;
 
     constructor() {
@@ -43,12 +50,15 @@ class Config {
     }
 }
 
+/**
+ * IGメディアシート管理用クラス
+ */
 class Media {
-    private config: Config;
+    private config: IConfig;
     private settings: Map<string, string>;    
     private idList: string[];
 
-    constructor(config: Config) {
+    constructor(config: IConfig) {
         this.config = config;
         this.settings = this.config.getSettings();
         this.idList = [];
@@ -90,15 +100,15 @@ class Media {
         ws.clear();
 
         const idList = this.idList;
-        for (let i = 0; i < idList.length; i++) {            
-            const mediaId: string = idList[i];            
+        for (let i = 0; i < idList.length; i++) {
+            const mediaId: string = idList[i];
             const endpoint: string = "fields=caption,like_count,media_url,permalink";
             const baseUrl = this.settings.get("baseurl");
-            const version = this.settings.get("version");            
+            const version = this.settings.get("version");
             const accessToken = this.settings.get("accesstoken");
-            const url = `${baseUrl}/${version}/${mediaId}?${endpoint}&access_token=${accessToken}`;            
+            const url = `${baseUrl}/${version}/${mediaId}?${endpoint}&access_token=${accessToken}`;
             const response = UrlFetchApp.fetch(url);
-            const media = JSON.parse(response.getContentText());            
+            const media = JSON.parse(response.getContentText());
 
             const row: number = i + 1;
             const rowHeight: number = 80;
