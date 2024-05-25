@@ -5,7 +5,6 @@ function getSheet(sheetUrl: string, sheetName: string) {
 }
 
 class Config {
-
     private appId: string = "";
     private appSecret: string = "";
     private accessToken: string ="";
@@ -21,10 +20,18 @@ class Config {
         this.appId = ws.getRange("B2").getValue();
         this.accessToken = ws.getRange("B3").getValue();
     }
-        
-    getAppId = () => this.appId;
-    getAppSecret = () => this.appSecret;
-    getAccessToken = () => this.accessToken;
+
+    getAppId(): string {
+        return this.appId;
+    }
+    
+    getAppSecret(): string {
+        return this.appSecret;
+    }
+
+    getAccessToken(): string {
+        return this.accessToken;   
+    }
 }
 
 // interface mediaData {
