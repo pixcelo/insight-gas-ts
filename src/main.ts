@@ -23,6 +23,20 @@ function getSheetData(sheetUrl: string, sheetName: string): Map<string, string> 
     return map;
 }
 
+function createSheet(sheetName: string): void {
+    const spreadsheetId = '1HJH0gvyzaUEdMX_YbFVafq5OZIXAN4SZo1f4fFKKgRU';
+    const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+    const sheet = spreadsheet.getSheetByName(sheetName);
+    
+    if (!sheet) {
+      // シートが存在しない場合、新しいシートを作成
+      const sheetIndex: number = spreadsheet.getSheets().length;
+      const newSheet = spreadsheet.insertSheet(sheetName, sheetIndex + 1);
+
+      Logger.log('新しいシート "' + newSheet + '" を作成しました');
+    }    
+}
+
 interface IConfig {
     getSettings(): Map<string, string>
 }
@@ -55,7 +69,7 @@ class Config implements IConfig {
  */
 class Media {
     private config: IConfig;
-    private settings: Map<string, string>;    
+    private settings: Map<string, string>;
     private idList: string[];
 
     constructor(config: IConfig) {
@@ -109,12 +123,20 @@ class Media {
             const url = `${baseUrl}/${version}/${mediaId}?${endpoint}&access_token=${accessToken}`;
             const response = UrlFetchApp.fetch(url);
             const media = JSON.parse(response.getContentText());
-
+            
+            // 行のスタイルを調整
             const row: number = i + 1;
             const rowHeight: number = 80;
             ws.setRowHeight(row, rowHeight);
 
+            // シート作成
+            createSheet(mediaId);
+            const spreadsheet = SpreadsheetApp.openById("1HJH0gvyzaUEdMX_YbFVafq5OZIXAN4SZo1f4fFKKgRU");
+            const sheetId = spreadsheet.getSheetByName(mediaId)?.getSheetId();
+
+            // IGメディアの詳細を書き込み
             ws.getRange(row, 1).setValue(mediaId);
+            ws.getRange(row, 1).setFormula(`=HYPERLINK("${"#gid=" + sheetId}", "${mediaId}")`);
             ws.getRange(row, 2).setValue(media.like_count);
             ws.getRange(row, 3).setValue(`=IMAGE(D${row})`);
             ws.getRange(row, 4).setValue(media.media_url);
