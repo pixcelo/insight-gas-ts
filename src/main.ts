@@ -48,12 +48,17 @@ class Config {
     }
 }
 
-class MediaList {
+class Media {
     private config = new Config();
-    private endpoint = "media?";
-    private mediaList: string[] = [];
+    private settings: settings;    
+    public idList: string[] = [];
 
-    fetchMediaList(): void {
+    constructor(config: Config) {
+        this.config = config;
+        this.settings = this.config.getSettings(); 
+    }
+
+    fetchIdList(): void {
         try {
             const ws = getSheet(
                 "https://docs.google.com/spreadsheets/d/1HJH0gvyzaUEdMX_YbFVafq5OZIXAN4SZo1f4fFKKgRU/edit#gid=0",
@@ -63,15 +68,17 @@ class MediaList {
 
             // シートを初期化
             ws.clear();
-            const settings = this.config.getSettings();
-            const url = `${settings.baseUrl}/${settings.version}/${settings.userId}/${this.endpoint}&access_token=${settings.accessToken}`;            
+            
+            const endpoint = "media?";
+            const url = `${this.settings.baseUrl}/${this.settings.version}/${this.settings.userId}/${endpoint}&access_token=${this.settings.accessToken}`;
             const response = UrlFetchApp.fetch(url);
             const result = JSON.parse(response.getContentText());
-            console.log(result);
+            // console.log(result);
+
             result.data.forEach((media: any, index: number) => {
-                console.log(media.id);
+                // console.log(media.id);
                 ws.getRange(index + 1, 1).setValue(media.id);
-                this.mediaList.push(media.id);
+                this.idList.push(media.id);
             });            
         } catch (err) {
             // Logger.log(err);
@@ -79,6 +86,18 @@ class MediaList {
     }
 
     // メディアリストの一覧をループして、サムネイルやID、URLを取得
+    fetchMediaDetail(): void {
+        const idList = media.idList;
+        for (let i = 0; i < idList.length; i++) {
+            // console.log(idList[i]);
+            const mediaId = idList[i];            
+            const endpoint = "fields=caption,like_count,media_url";
+            const url = `${this.settings.baseUrl}/${this.settings.version}/${mediaId}?${endpoint}&access_token=${this.settings.accessToken}`;            
+            const response = UrlFetchApp.fetch(url);
+            const result = JSON.parse(response.getContentText());
+            console.log(result.caption, result.like_count, result.media_url);
+        }
+    }
 }
 
 class InsightFetcher {
@@ -86,5 +105,6 @@ class InsightFetcher {
     // メディアリストの一覧を受け取って、シートを作成（なければ）、そのシートの最後の行に現在のインサイトを入力する
 }
 
-const media = new MediaList();
-media.fetchMediaList();
+const media = new Media(new Config());
+media.fetchIdList();
+media.fetchMediaDetail();
