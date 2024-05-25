@@ -4,58 +4,54 @@ function getSheet(sheetUrl: string, sheetName: string) {
     return spreadsheet.getSheetByName(sheetName);
 }
 
-type settings = {
-    appid: string,
-    appSecret: string,
-    accessToken: string,
-    userId: string,
-    baseUrl: string,
-    version: string
+function getSheetData(sheetUrl: string, sheetName: string): Map<string, string> {
+    const spreadsheet = SpreadsheetApp.openByUrl(sheetUrl);
+    const sheet = spreadsheet.getSheetByName(sheetName);
+    if (!sheet) {
+        throw new Error('指定されたシートが見つかりません: ' + sheetName);
+    }
+    
+    const map = new Map();
+    const lastRow = sheet.getLastRow();
+    const values = sheet.getRange(`A1:B${lastRow}`).getValues();
+    values.forEach(function(row) {
+        if (row[0] && row[1]) {
+            map.set(row[0].toString().toLowerCase(), row[1]);
+        }
+    });
+    
+    return map;
 }
 
 class Config {
-    private appId: string = "";
-    private appSecret: string = "";
-    private accessToken: string = "";
-    private userId: string = "";
-    private baseUrl: string = "";
-    private version: string = "";
+    private settings: Map<string, string>;
 
     constructor() {
-        const ws = getSheet(
+        this.settings = new Map();
+
+        const sheetData = getSheetData(
             "https://docs.google.com/spreadsheets/d/1HJH0gvyzaUEdMX_YbFVafq5OZIXAN4SZo1f4fFKKgRU/edit#gid=1947337068",
             "config"
         );
-        if (!ws) return;
+        if (!sheetData) return;
 
-        this.appSecret = ws.getRange("B1").getValue();
-        this.appId = ws.getRange("B2").getValue();
-        this.accessToken = ws.getRange("B3").getValue();
-        this.userId = ws.getRange("B4").getValue();
-        this.baseUrl = ws.getRange("B5").getValue();
-        this.version = ws.getRange("B6").getValue();
+        this.settings = sheetData;
     }
 
-    getSettings(): settings {
-        return {
-            appid: this.appId,
-            appSecret: this.appSecret,
-            accessToken: this.accessToken,
-            userId: this.userId,
-            baseUrl: this.baseUrl,
-            version: this.version
-        }
+    getSettings(): Map<string, string> {
+        return this.settings;
     }
 }
 
 class Media {
-    private config = new Config();
-    private settings: settings;    
-    public idList: string[] = [];
+    private config: Config;
+    private settings: Map<string, string>;    
+    private idList: string[];
 
     constructor(config: Config) {
         this.config = config;
-        this.settings = this.config.getSettings(); 
+        this.settings = this.config.getSettings();
+        this.idList = [];
     }
 
     fetchIdList(): void {
@@ -70,7 +66,11 @@ class Media {
             ws.clear();
             
             const endpoint = "media?";
-            const url = `${this.settings.baseUrl}/${this.settings.version}/${this.settings.userId}/${endpoint}&access_token=${this.settings.accessToken}`;
+            const baseUrl = this.settings.get("baseurl");
+            const version = this.settings.get("version");
+            const userId = this.settings.get("userid");
+            const accessToken = this.settings.get("accesstoken");
+            const url = `${baseUrl}/${version}/${userId}/${endpoint}&access_token=${accessToken}`;
             const response = UrlFetchApp.fetch(url);
             const result = JSON.parse(response.getContentText());
             // console.log(result);
@@ -92,7 +92,10 @@ class Media {
             // console.log(idList[i]);
             const mediaId = idList[i];            
             const endpoint = "fields=caption,like_count,media_url";
-            const url = `${this.settings.baseUrl}/${this.settings.version}/${mediaId}?${endpoint}&access_token=${this.settings.accessToken}`;            
+            const baseUrl = this.settings.get("baseurl");
+            const version = this.settings.get("version");            
+            const accessToken = this.settings.get("accesstoken");
+            const url = `${baseUrl}/${version}/${mediaId}?${endpoint}&access_token=${accessToken}`;            
             const response = UrlFetchApp.fetch(url);
             const result = JSON.parse(response.getContentText());
             console.log(result.caption, result.like_count, result.media_url);
