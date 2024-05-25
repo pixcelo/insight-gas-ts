@@ -54,17 +54,11 @@ class Media {
         this.idList = [];
     }
 
+    /**
+     * IGメディアのIDを取得
+     */
     fetchIdList(): void {
-        try {
-            const ws = getSheet(
-                "https://docs.google.com/spreadsheets/d/1HJH0gvyzaUEdMX_YbFVafq5OZIXAN4SZo1f4fFKKgRU/edit#gid=0",
-                "mediaList"
-            );
-            if (!ws) return;
-
-            // シートを初期化
-            ws.clear();
-            
+        try {            
             const endpoint = "media?";
             const baseUrl = this.settings.get("baseurl");
             const version = this.settings.get("version");
@@ -73,11 +67,8 @@ class Media {
             const url = `${baseUrl}/${version}/${userId}/${endpoint}&access_token=${accessToken}`;
             const response = UrlFetchApp.fetch(url);
             const result = JSON.parse(response.getContentText());
-            // console.log(result);
 
-            result.data.forEach((media: any, index: number) => {
-                // console.log(media.id);
-                ws.getRange(index + 1, 1).setValue(media.id);
+            result.data.forEach((media: any, index: number) => {                                
                 this.idList.push(media.id);
             });            
         } catch (err) {
@@ -85,20 +76,39 @@ class Media {
         }        
     }
 
-    // メディアリストの一覧をループして、サムネイルやID、URLを取得
+    /**
+     * IGメディアの詳細を取得してシートに書き込む
+     */
     fetchMediaDetail(): void {
-        const idList = media.idList;
-        for (let i = 0; i < idList.length; i++) {
-            // console.log(idList[i]);
-            const mediaId = idList[i];            
-            const endpoint = "fields=caption,like_count,media_url";
+        const ws = getSheet(
+            "https://docs.google.com/spreadsheets/d/1HJH0gvyzaUEdMX_YbFVafq5OZIXAN4SZo1f4fFKKgRU/edit#gid=0",
+            "media"
+        );
+        if (!ws) return;
+
+        // シートを初期化
+        ws.clear();
+
+        const idList = this.idList;
+        for (let i = 0; i < idList.length; i++) {            
+            const mediaId: string = idList[i];            
+            const endpoint: string = "fields=caption,like_count,media_url,permalink";
             const baseUrl = this.settings.get("baseurl");
             const version = this.settings.get("version");            
             const accessToken = this.settings.get("accesstoken");
             const url = `${baseUrl}/${version}/${mediaId}?${endpoint}&access_token=${accessToken}`;            
             const response = UrlFetchApp.fetch(url);
-            const result = JSON.parse(response.getContentText());
-            console.log(result.caption, result.like_count, result.media_url);
+            const media = JSON.parse(response.getContentText());            
+
+            const row: number = i + 1;
+            const rowHeight: number = 80;
+            ws.setRowHeight(row, rowHeight);
+
+            ws.getRange(row, 1).setValue(mediaId);
+            ws.getRange(row, 2).setValue(media.like_count);
+            ws.getRange(row, 3).setValue(`=IMAGE(D${row})`);
+            ws.getRange(row, 4).setValue(media.media_url);
+            ws.getRange(row, 5).setValue(media.permalink);
         }
     }
 }
