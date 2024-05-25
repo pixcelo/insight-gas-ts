@@ -14,26 +14,28 @@ function getTableFromSheet() {
     console.log(table);
 }
 
-class AppSetting {
-    
+class Config {
+
     appId = "";
     appSecret = "";
     accessToken ="";
 
     constructor() {
         const SHEET_URL = "https://docs.google.com/spreadsheets/d/1HJH0gvyzaUEdMX_YbFVafq5OZIXAN4SZo1f4fFKKgRU/edit#gid=0";
-        const SHEET_KEYS = "keys";
+        const SHEET_CONFIG = "config";
         const ssa = SpreadsheetApp.openByUrl(SHEET_URL);
-        const ws = ssa.getSheetByName(SHEET_KEYS);
+        const ws = ssa.getSheetByName(SHEET_CONFIG);
         if (!ws) return;
 
         this.appSecret = ws.getRange("A1").getValue();
-        this.appId = ws.getRange("A2").getValue();        
+        this.appId = ws.getRange("A2").getValue();
+        this.accessToken = ws.getRange("A3").getValue();
     }
         
     getAppId = () => this.appId;
     getAppSecret = () => this.appSecret;
+    getAccessToken = () => this.accessToken;
 }
 
-const appSetting = new AppSetting();
-console.log(appSetting.getAppId());
+const config = new Config();
+console.log(config.getAppId());
