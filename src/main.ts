@@ -4,10 +4,18 @@ function getSheet(sheetUrl: string, sheetName: string) {
     return spreadsheet.getSheetByName(sheetName);
 }
 
+type settings = {
+    appid: string,
+    appSecret: string,
+    accessToken: string,
+    userId: string
+}
+
 class Config {
     private appId: string = "";
     private appSecret: string = "";
-    private accessToken: string ="";
+    private accessToken: string = "";
+    private userId: string = "";
 
     constructor() {
         const ws = getSheet(
@@ -19,36 +27,26 @@ class Config {
         this.appSecret = ws.getRange("B1").getValue();
         this.appId = ws.getRange("B2").getValue();
         this.accessToken = ws.getRange("B3").getValue();
+        this.userId = ws.getRange("B4").getValue();
     }
 
-    getAppId(): string {
-        return this.appId;
-    }
-    
-    getAppSecret(): string {
-        return this.appSecret;
-    }
-
-    getAccessToken(): string {
-        return this.accessToken;   
+    getSettings(): settings {
+        return {
+            appid: this.appId,
+            appSecret: this.appSecret,
+            accessToken: this.accessToken,
+            userId: this.userId
+        }
     }
 }
-
-// interface mediaData {
-//     id: string
-// }
-
-// interface Media {
-//     dataList: mediaData[]
-// }
 
 class MediaList {
     c = new Config();
     base_url = "https://graph.facebook.com";
     version = "v19.0";
-    id = "17841463939587178";
     endpoint = "media?";
-    url = `${this.base_url}/${this.version}/${this.id}/${this.endpoint}&access_token=${this.c.getAccessToken()}`;    
+
+    mediaList: string[] = [];
 
     fetchMediaList(): void {
         try {
@@ -58,21 +56,29 @@ class MediaList {
             );
             if (!ws) return;
 
-            // 初期化
+            // シートを初期化
             ws.clear();
-
-            console.log(this.url);
-            const response = UrlFetchApp.fetch(this.url);
+            const settings = this.c.getSettings();
+            const url = `${this.base_url}/${this.version}/${settings.userId}/${this.endpoint}&access_token=${settings.accessToken}`;            
+            const response = UrlFetchApp.fetch(url);
             const result = JSON.parse(response.getContentText());
             console.log(result);
             result.data.forEach((media: any, index: number) => {
                 console.log(media.id);
                 ws.getRange(index + 1, 1).setValue(media.id);
+                this.mediaList.push(media.id);
             });            
         } catch (err) {
             // Logger.log(err);
-        }
+        }        
     }
+
+    // メディアリストの一覧をループして、サムネイルやID、URLを取得
+}
+
+class InsightFetcher {
+
+    // メディアリストの一覧を受け取って、シートを作成（なければ）、そのシートの最後の行に現在のインサイトを入力する
 }
 
 const media = new MediaList();
