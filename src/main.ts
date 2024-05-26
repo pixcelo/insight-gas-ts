@@ -29,12 +29,20 @@ function createSheet(sheetName: string): void {
     const sheet = spreadsheet.getSheetByName(sheetName);
     
     if (!sheet) {
-      // シートが存在しない場合、新しいシートを作成
-      const sheetIndex: number = spreadsheet.getSheets().length;
-      const newSheet = spreadsheet.insertSheet(sheetName, sheetIndex + 1);
-
-      Logger.log('新しいシート "' + newSheet + '" を作成しました');
-    }    
+        // シートが存在しない場合、新しいシートを作成
+        const sheetIndex: number = spreadsheet.getSheets().length;
+        const newSheet = spreadsheet.insertSheet(sheetName, sheetIndex + 1);
+        
+        newSheet.getRange("A1").setValue("計測日");
+        newSheet.getRange("B1").setValue("計測時間");
+        newSheet.getRange("C1").setValue("リーチ数");
+        newSheet.getRange("D1").setValue("再生数");
+        newSheet.getRange("E1").setValue("いいね");
+        newSheet.getRange("F1").setValue("保存");
+        newSheet.getRange("G1").setValue("コメ");
+        
+        Logger.log('新しいシート "' + sheetName + '" を作成しました');
+    }
 }
 
 interface IConfig {
@@ -78,6 +86,10 @@ class Media {
         this.idList = [];
     }
 
+    getIdList(): string[] {
+        return this.idList;
+    }
+
     /**
      * IGメディアのIDを取得
      */
@@ -111,11 +123,16 @@ class Media {
         if (!ws) return;
 
         // シートを初期化
-        ws.clear();
+        // ws.clear();
+
+        const existList = this.readIdList(ws);
 
         const idList = this.idList;
         for (let i = 0; i < idList.length; i++) {
             const mediaId: string = idList[i];
+            if (existList.includes(mediaId)) continue;
+
+            // シートに存在しない場合、メディアの詳細を取得
             const endpoint: string = "fields=caption,like_count,media_url,permalink";
             const baseUrl = this.settings.get("baseurl");
             const version = this.settings.get("version");
@@ -125,7 +142,8 @@ class Media {
             const media = JSON.parse(response.getContentText());
             
             // 行のスタイルを調整
-            const row: number = i + 1;
+            const lastRow = ws.getLastRow();
+            const row: number = lastRow + 1;
             const rowHeight: number = 80;
             ws.setRowHeight(row, rowHeight);
 
@@ -143,13 +161,60 @@ class Media {
             ws.getRange(row, 5).setValue(media.permalink);
         }
     }
+
+    /**
+     * シートに記載済みのIDリストを取得
+     */
+    readIdList(sheet: GoogleAppsScript.Spreadsheet.Sheet): string[] {
+        const idList: string[] = [];        
+        const lastRow = sheet.getLastRow();
+        if (lastRow === 0) return idList;            
+
+        const values = sheet.getRange(`A1:A${lastRow}`).getValues();
+        values.forEach(function(row) {
+            idList.push(row[0]);
+        });
+        
+        return idList;
+    }
 }
 
-class InsightFetcher {
+/**
+ * IGメディアのインサイトを取得するクラス
+ */
+class MediaInsightFetcher {
 
-    // メディアリストの一覧を受け取って、シートを作成（なければ）、そのシートの最後の行に現在のインサイトを入力する
+    fetchInsight(mediaId: string): void {
+
+    }
+
+    writeInsight(): void {
+
+    }
 }
 
 const media = new Media(new Config());
 media.fetchIdList();
 media.fetchMediaDetail();
+
+const mediaInsightFetcher = new MediaInsightFetcher();
+
+// トリガーで定期実行する
+function main() {
+    // 実行する手順
+    // IGメディアを取得　新規があればmidiaシートの一番下に追加、シートを作成
+
+
+    // mediaシートのＩＤの配列を取得、ループ    
+
+    // インサイトを取得する
+
+    // 現在のインサイトを取得する
+
+    // IDごとにシート取得
+    // シートの最終行を取得
+    // 最終行＋１からスタート
+
+    // 変数に格納する
+    // 最終行＋１に書き込む
+}
