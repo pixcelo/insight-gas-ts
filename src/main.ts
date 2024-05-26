@@ -23,6 +23,22 @@ function getSheetData(sheetUrl: string, sheetName: string): Map<string, string> 
     return map;
 }
 
+interface CurrentDate {
+    year: string;
+    month: string;
+    day: string;
+    hour: string;
+}
+
+function getCurrentDate(date: Date): CurrentDate {
+    const year = date.getFullYear().toString().slice(-2);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hour = date.getHours().toString().padStart(2, '0');
+
+    return {year, month, day, hour};
+}
+
 function createSheet(sheetName: string): void {
     const spreadsheetId = '1HJH0gvyzaUEdMX_YbFVafq5OZIXAN4SZo1f4fFKKgRU';
     const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
@@ -180,41 +196,94 @@ class Media {
 }
 
 /**
+ * IGメディアのインサイトのレスポンス型
+ */
+interface InsightValue {
+    value: number;
+}
+
+interface InsightData {
+    name: string;
+    period: string;
+    values: InsightValue[];
+    title: string;
+    description: string;
+    id: string;
+}
+
+interface InsightsResponse {
+    data: InsightData[];
+}
+
+
+/**
  * IGメディアのインサイトを取得するクラス
  */
 class MediaInsightFetcher {
+    private config: IConfig;
+    private settings: Map<string, string>;
+    private currentDate: CurrentDate;
+
+    constructor(config: IConfig) {
+        this.config = config;
+        this.settings = this.config.getSettings();
+        this.currentDate = getCurrentDate(new Date());
+    }
 
     fetchInsight(mediaId: string): void {
-
+        try {
+            const endpoint: string = "insights?metric=impressions,reach,saved&period=day";
+            const baseUrl = this.settings.get("baseurl");
+            const version = this.settings.get("version");
+            const accessToken = this.settings.get("accesstoken");
+            const url = `${baseUrl}/${version}/${mediaId}/${endpoint}&access_token=${accessToken}`;
+            const response = UrlFetchApp.fetch(url);
+            const insights: InsightsResponse = JSON.parse(response.getContentText());
+            // console.log(url);            
+            this.writeInsight(mediaId, insights)
+        } catch (err) {
+            // ビジネスアカウントへの変更前に投稿されたメディアはインサイトを取得できない
+        }        
     }
 
-    writeInsight(): void {
+    writeInsight(mediaId: string, insights: InsightsResponse): void {
+        console.log(mediaId, insights.data[0].name);
 
+        // 変数に格納する
+        const map = new Map<string, InsightData>();
+        for (const data of insights.data) {
+            map.set(data.name, data);
+        }
+
+        // IDごとにシート取得
+        const spreadsheetId = '1HJH0gvyzaUEdMX_YbFVafq5OZIXAN4SZo1f4fFKKgRU';
+        const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+        const sheet = spreadsheet.getSheetByName(mediaId);
+        if (!sheet) return;
+
+        // シートの最終行 +1 からスタート
+        const lastRow: number = sheet.getLastRow();
+        const row: number = lastRow + 1;        
+
+        // 最新のインサイトを書き込み        
+        sheet.getRange(row, 1).setValue(`${this.currentDate.month}月${this.currentDate.day}日`);
+        sheet.getRange(row, 2).setValue(`${this.currentDate.hour}時`);
     }
 }
-
-const media = new Media(new Config());
-media.fetchIdList();
-media.fetchMediaDetail();
-
-const mediaInsightFetcher = new MediaInsightFetcher();
 
 // トリガーで定期実行する
-function main() {
-    // 実行する手順
-    // IGメディアを取得　新規があればmidiaシートの一番下に追加、シートを作成
+function main() {    
+    // IGメディアを取得：新規があればmediaシートの一番下に追加、シート作成
+    const media = new Media(new Config());
+    media.fetchIdList();
+    media.fetchMediaDetail();
 
-
-    // mediaシートのＩＤの配列を取得、ループ    
-
-    // インサイトを取得する
-
-    // 現在のインサイトを取得する
-
-    // IDごとにシート取得
-    // シートの最終行を取得
-    // 最終行＋１からスタート
-
-    // 変数に格納する
-    // 最終行＋１に書き込む
+    // mediaシートの各IDをキーに現在のインサイトを取得する
+    const mediaInsightFetcher = new MediaInsightFetcher(new Config());
+    const idList = media.getIdList();
+    for (const id of idList) {
+        mediaInsightFetcher.fetchInsight(id);
+    }
 }
+
+main();
