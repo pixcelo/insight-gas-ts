@@ -31,10 +31,10 @@ interface CurrentDate {
 }
 
 function getCurrentDate(date: Date): CurrentDate {
-    const year = date.getFullYear().toString().slice(-2);
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const hour = date.getHours().toString().padStart(2, '0');
+    const year: string = date.getFullYear().toString().slice(-2);
+    const month: string = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day: string = date.getDate().toString().padStart(2, '0');
+    const hour: string = date.getHours().toString().padStart(2, '0');
 
     return {year, month, day, hour};
 }
@@ -47,15 +47,29 @@ function createSheet(sheetName: string): void {
     if (!sheet) {
         // シートが存在しない場合、新しいシートを作成
         const sheetIndex: number = spreadsheet.getSheets().length;
-        const newSheet = spreadsheet.insertSheet(sheetName, sheetIndex + 1);
-        
-        newSheet.getRange("A1").setValue("計測日");
-        newSheet.getRange("B1").setValue("計測時間");
-        newSheet.getRange("C1").setValue("リーチ数");
-        newSheet.getRange("D1").setValue("再生数");
-        newSheet.getRange("E1").setValue("いいね");
-        newSheet.getRange("F1").setValue("保存");
-        newSheet.getRange("G1").setValue("コメ");
+        const newSheet: GoogleAppsScript.Spreadsheet.Sheet = spreadsheet.insertSheet(sheetName, sheetIndex + 1);
+
+        const headers: string[] = [
+            "計測日",
+            "計測時間",
+            "リーチ数",
+            "再生数",
+            "いいね",
+            "保存",
+            "コメ",
+            "フォ内外",
+            "初回再生",
+            "リプレイ",
+            "総時間",
+            "平均時間",
+            "平均視聴回数",
+            "ENG率",
+            "保存率"
+        ];
+
+        headers.forEach((header, index) => {
+            newSheet.getRange(1, index + 1).setValue(header);
+        });            
         
         Logger.log('新しいシート "' + sheetName + '" を作成しました');
     }
@@ -232,7 +246,8 @@ class MediaInsightFetcher {
 
     fetchInsight(mediaId: string): void {
         try {
-            const endpoint: string = "insights?metric=impressions,reach,saved&period=day";
+            const metric: string = "impressions,reach,saved,likes";
+            const endpoint: string = `insights?metric=${metric}&period=lifetime`;
             const baseUrl = this.settings.get("baseurl");
             const version = this.settings.get("version");
             const accessToken = this.settings.get("accesstoken");
@@ -256,18 +271,32 @@ class MediaInsightFetcher {
         }
 
         // IDごとにシート取得
-        const spreadsheetId = '1HJH0gvyzaUEdMX_YbFVafq5OZIXAN4SZo1f4fFKKgRU';
+        const spreadsheetId: string = '1HJH0gvyzaUEdMX_YbFVafq5OZIXAN4SZo1f4fFKKgRU';
         const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
         const sheet = spreadsheet.getSheetByName(mediaId);
         if (!sheet) return;
 
         // シートの最終行 +1 からスタート
         const lastRow: number = sheet.getLastRow();
-        const row: number = lastRow + 1;        
+        const row: number = lastRow + 1;
+        let col: number = 1;
 
         // 最新のインサイトを書き込み        
-        sheet.getRange(row, 1).setValue(`${this.currentDate.month}月${this.currentDate.day}日`);
-        sheet.getRange(row, 2).setValue(`${this.currentDate.hour}時`);
+        sheet.getRange(row, col++).setValue(`${this.currentDate.month}月${this.currentDate.day}日`); // 計測日
+        sheet.getRange(row, col++).setValue(`${this.currentDate.hour}時`); // 計測時間
+        sheet.getRange(row, col++).setValue(map.get("reach")?.values[0].value); // リーチ数
+        sheet.getRange(row, col++).setValue(map.get("plays")?.values[0].value); // 再生数
+        sheet.getRange(row, col++).setValue(map.get("likes")?.values[0].value); // いいね
+        sheet.getRange(row, col++).setValue(map.get("saved")?.values[0].value); // 保存
+        sheet.getRange(row, col++).setValue(map.get("comments")?.values[0].value); // コメ
+        sheet.getRange(row, col++).setValue(1); // フォ内外
+        sheet.getRange(row, col++).setValue(1); // 初回再生
+        sheet.getRange(row, col++).setValue(1); // リプレイ
+        sheet.getRange(row, col++).setValue(1); // 総時間
+        sheet.getRange(row, col++).setValue(1); // 平均時間
+        sheet.getRange(row, col++).setValue(1); // 平均視聴回数
+        sheet.getRange(row, col++).setValue(1); // ENG率
+        sheet.getRange(row, col++).setValue(1); // 保存率
     }
 }
 
